@@ -150,10 +150,19 @@ else:
     if "edit_mode" not in st.session_state:
         st.session_state.edit_mode = False
     
+    def _fmt_tx_id(x):
+        for t in transactions:
+            if t['id'] == x:
+                return "ID {} | {} | {} | {} | {}".format(
+                    x, t['date'], type_to_korean(t['type']),
+                    format_currency(t['amount']), t['category']
+                )
+        return "ID {}".format(x)
+
     selected_id = st.selectbox(
         "수정/삭제할 거래 ID 선택",
         options=tx_ids,
-        format_func=lambda x: f"ID {x} | {next((t['date'] + ' | ' + type_to_korean(t['type']) + ' | ' + format_currency(t['amount']) + ' | ' + t['category']) for t in transactions if t['id'] == x, '')}"
+        format_func=_fmt_tx_id
     )
     
     if selected_id:
