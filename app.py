@@ -20,6 +20,7 @@ from datetime import date, timedelta
 
 # 로컬 모듈 임포트
 import db
+import auth
 import analytics
 from ui_components import (
     format_currency,
@@ -46,11 +47,14 @@ st.set_page_config(
 # 데이터베이스 초기화 (테이블이 없으면 생성)
 db.init_db()
 
+# 인증 확인 (로그인하지 않으면 로그인 화면 표시 후 중단)
+user_id = auth.check_auth()
+
 # ============================================================
 # 사이드바 - 공통 필터
 # ============================================================
 st.sidebar.title("💰 가계부 분석기")
-st.sidebar.markdown("---")
+auth.show_user_info()
 
 # 기간 선택
 start_date, end_date = date_range_selector(key_prefix="home")
@@ -66,6 +70,7 @@ st.caption(f"📅 조회 기간: {start_date} ~ {end_date}")
 
 # 데이터 조회
 transactions = db.get_transactions(
+    user_id,
     start_date=str(start_date),
     end_date=str(end_date)
 )
@@ -143,7 +148,7 @@ st.markdown("---")
 
 # ── 인사이트 ──
 st.subheader("💡 인사이트")
-budgets = db.get_budgets(month=date.today().strftime("%Y-%m"))
+budgets = db.get_budgets(user_id, month=date.today().strftime("%Y-%m"))
 insights = analytics.generate_insights(df, budgets)
 display_insights(insights)
 

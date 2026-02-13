@@ -16,6 +16,7 @@ import os
 # 상위 디렉토리의 모듈을 import하기 위한 경로 설정
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import db
+import auth
 from ui_components import type_to_english
 
 # ============================================================
@@ -26,7 +27,11 @@ st.set_page_config(page_title="📝 거래 입력", page_icon="📝", layout="wi
 # DB 초기화
 db.init_db()
 
+# 인증 확인
+user_id = auth.check_auth()
+
 st.title("📝 거래 입력")
+auth.show_user_info()
 st.caption("수입 또는 지출 내역을 입력하세요. 모든 데이터는 로컬 DB에 저장됩니다.")
 
 st.markdown("---")
@@ -69,7 +74,7 @@ with st.form("transaction_form", clear_on_submit=True):
     with col2:
         # 카테고리 선택 (수입/지출에 따라 다른 목록)
         tx_type_en = type_to_english(tx_type_kr)
-        categories = db.get_categories(tx_type_en)
+        categories = db.get_categories(user_id, tx_type_en)
         
         if not categories:
             categories = ["기타"]
@@ -123,6 +128,7 @@ if submitted:
         # DB에 저장
         try:
             new_id = db.add_transaction(
+                user_id,
                 date_str=str(tx_date),
                 tx_type=tx_type_en,
                 amount=float(amount),
@@ -155,7 +161,7 @@ if submitted:
 st.markdown("---")
 st.subheader("🕐 최근 입력 내역")
 
-recent = db.get_transactions(sort_by="created_at", sort_order="DESC")
+recent = db.get_transactions(user_id, sort_by="created_at", sort_order="DESC")
 if recent:
     # 최근 5건만 표시
     import pandas as pd

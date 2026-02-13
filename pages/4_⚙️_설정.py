@@ -12,6 +12,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import db
+import auth
 from ui_components import format_currency
 
 # ============================================================
@@ -20,7 +21,11 @@ from ui_components import format_currency
 st.set_page_config(page_title="⚙️ 설정", page_icon="⚙️", layout="wide")
 db.init_db()
 
+# 인증 확인
+user_id = auth.check_auth()
+
 st.title("⚙️ 설정")
+auth.show_user_info()
 st.caption("카테고리, 예산, 데이터 관리를 할 수 있습니다.")
 
 # 탭으로 설정 카테고리 구분
@@ -40,13 +45,13 @@ with tab1:
     # ── 지출 카테고리 ──
     with col1:
         st.markdown("#### 💸 지출 카테고리")
-        expense_cats = db.get_categories("expense")
+        expense_cats = db.get_categories(user_id, "expense")
         
         for cat in expense_cats:
             c1, c2 = st.columns([4, 1])
             c1.markdown(f"• {cat}")
             if c2.button("🗑️", key=f"del_exp_{cat}", help=f"'{cat}' 삭제"):
-                db.delete_category("expense", cat)
+                db.delete_category(user_id, "expense", cat)
                 st.rerun()
         
         st.markdown("---")
@@ -54,7 +59,7 @@ with tab1:
             new_cat = st.text_input("새 지출 카테고리명", key="new_exp_cat")
             if st.form_submit_button("➕ 추가"):
                 if new_cat.strip():
-                    if db.add_category("expense", new_cat.strip()):
+                    if db.add_category(user_id, "expense", new_cat.strip()):
                         st.success(f"✅ '{new_cat}' 추가 완료!")
                         st.rerun()
                     else:
@@ -65,13 +70,13 @@ with tab1:
     # ── 수입 카테고리 ──
     with col2:
         st.markdown("#### 💰 수입 카테고리")
-        income_cats = db.get_categories("income")
+        income_cats = db.get_categories(user_id, "income")
         
         for cat in income_cats:
             c1, c2 = st.columns([4, 1])
             c1.markdown(f"• {cat}")
             if c2.button("🗑️", key=f"del_inc_{cat}", help=f"'{cat}' 삭제"):
-                db.delete_category("income", cat)
+                db.delete_category(user_id, "income", cat)
                 st.rerun()
         
         st.markdown("---")
@@ -79,7 +84,7 @@ with tab1:
             new_cat = st.text_input("새 수입 카테고리명", key="new_inc_cat")
             if st.form_submit_button("➕ 추가"):
                 if new_cat.strip():
-                    if db.add_category("income", new_cat.strip()):
+                    if db.add_category(user_id, "income", new_cat.strip()):
                         st.success(f"✅ '{new_cat}' 추가 완료!")
                         st.rerun()
                     else:
@@ -106,7 +111,7 @@ with tab2:
             )
         
         with col2:
-            expense_cats = db.get_categories("expense")
+            expense_cats = db.get_categories(user_id, "expense")
             budget_cat_options = ["전체 (총 예산)"] + expense_cats
             budget_cat = st.selectbox("🏷️ 카테고리", budget_cat_options)
         
@@ -124,7 +129,7 @@ with tab2:
             if budget_amount <= 0:
                 st.error("예산 금액은 0보다 커야 합니다.")
             else:
-                db.set_budget(budget_month, cat_value, budget_amount)
+                db.set_budget(user_id, budget_month, cat_value, budget_amount)
                 st.success(f"✅ {budget_month} {'전체' if not cat_value else cat_value} "
                            f"예산 {format_currency(budget_amount)} 저장 완료!")
                 st.rerun()
@@ -133,7 +138,7 @@ with tab2:
     
     # 현재 예산 목록
     st.markdown("#### 📋 설정된 예산 목록")
-    budgets = db.get_budgets()
+    budgets = db.get_budgets(user_id)
     
     if budgets:
         import pandas as pd
@@ -148,7 +153,7 @@ with tab2:
         # 예산 삭제
         del_id = st.selectbox("삭제할 예산 ID", [b["id"] for b in budgets])
         if st.button("🗑️ 선택한 예산 삭제"):
-            db.delete_budget(del_id)
+            db.delete_budget(user_id, del_id)
             st.success("✅ 예산 삭제 완료!")
             st.rerun()
     else:
@@ -167,7 +172,7 @@ with tab3:
         st.markdown("#### 📤 CSV 내보내기")
         st.caption("저장된 거래 내역을 CSV 파일로 다운로드합니다.")
         
-        csv_data = db.export_transactions_csv()
+        csv_data = db.export_transactions_csv(user_id)
         if csv_data:
             st.download_button(
                 label="📥 CSV 다운로드",
@@ -193,7 +198,7 @@ with tab3:
         
         if st.button("🗑️ 거래 데이터만 삭제", type="secondary", use_container_width=True):
             if confirm_text == "삭제합니다":
-                db.clear_all_data()
+                db.clear_all_data(user_id)
                 st.success("✅ 모든 거래 데이터가 삭제되었습니다.")
                 st.rerun()
             else:
@@ -201,7 +206,7 @@ with tab3:
         
         if st.button("💣 전체 초기화 (카테고리/예산 포함)", type="secondary", use_container_width=True):
             if confirm_text == "삭제합니다":
-                db.clear_everything()
+                db.clear_everything(user_id)
                 st.success("✅ 모든 데이터가 초기화되었습니다. 기본 카테고리가 다시 생성되었습니다.")
                 st.rerun()
             else:
@@ -229,7 +234,7 @@ with tab4:
     
     if st.button("🎲 샘플 데이터 생성", type="primary", use_container_width=True):
         with st.spinner("데이터를 생성하는 중..."):
-            count = db.generate_sample_data(num_months=num_months)
+            count = db.generate_sample_data(user_id, num_months=num_months)
         st.success(f"✅ {count}건의 샘플 데이터가 생성되었습니다!")
         st.balloons()
         st.info("🏠 대시보드로 이동하면 차트와 분석을 확인할 수 있습니다.")

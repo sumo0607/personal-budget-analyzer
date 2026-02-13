@@ -18,6 +18,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import db
+import auth
 from ui_components import (
     format_currency,
     type_to_korean,
@@ -31,7 +32,11 @@ from ui_components import (
 st.set_page_config(page_title="📋 거래 내역", page_icon="📋", layout="wide")
 db.init_db()
 
+# 인증 확인
+user_id = auth.check_auth()
+
 st.title("📋 거래 내역")
+auth.show_user_info()
 st.caption("저장된 거래를 조회하고, 수정하거나 삭제할 수 있습니다.")
 
 # ============================================================
@@ -70,7 +75,7 @@ else:  # 전체
 tx_type_filter = st.sidebar.radio("📌 유형", ["전체", "수입", "지출"], horizontal=True)
 
 # 카테고리 필터
-all_cats = db.get_categories()
+all_cats = db.get_categories(user_id)
 selected_cats = st.sidebar.multiselect("🏷️ 카테고리", all_cats, default=[])
 
 # 결제수단 필터
@@ -93,6 +98,7 @@ dir_map = {"최신순/큰순": "DESC", "오래된순/작은순": "ASC"}
 # 데이터 조회
 # ============================================================
 transactions = db.get_transactions(
+    user_id,
     start_date=str(start_date) if start_date else None,
     end_date=str(end_date) if end_date else None,
     tx_type=tx_type_filter if tx_type_filter != "전체" else None,
@@ -166,7 +172,7 @@ else:
     )
     
     if selected_id:
-        tx = db.get_transaction_by_id(selected_id)
+        tx = db.get_transaction_by_id(user_id, selected_id)
         
         if tx:
             col_edit, col_delete = st.columns(2)
@@ -183,7 +189,7 @@ else:
                                                    value=int(tx["amount"]), step=1000)
                     
                     edit_type_en = type_to_english(edit_type)
-                    edit_cats = db.get_categories(edit_type_en)
+                    edit_cats = db.get_categories(user_id, edit_type_en)
                     cat_idx = edit_cats.index(tx["category"]) if tx["category"] in edit_cats else 0
                     edit_category = st.selectbox("카테고리", edit_cats, index=cat_idx)
                     
@@ -197,6 +203,7 @@ else:
                             st.error("금액은 0보다 커야 합니다.")
                         else:
                             db.update_transaction(
+                                user_id,
                                 selected_id,
                                 str(edit_date),
                                 edit_type_en,
@@ -223,6 +230,6 @@ else:
                 confirm = st.checkbox("삭제를 확인합니다", key=f"del_confirm_{selected_id}")
                 if st.button("🗑️ 삭제 실행", type="secondary", 
                              use_container_width=True, disabled=not confirm):
-                    db.delete_transaction(selected_id)
+                    db.delete_transaction(user_id, selected_id)
                     st.success("✅ 삭제 완료!")
                     st.rerun()

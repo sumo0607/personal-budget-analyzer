@@ -20,6 +20,7 @@ import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import db
+import auth
 import analytics
 from ui_components import (
     format_currency,
@@ -41,7 +42,11 @@ from ui_components import (
 st.set_page_config(page_title="📊 분석", page_icon="📊", layout="wide")
 db.init_db()
 
+# 인증 확인
+user_id = auth.check_auth()
+
 st.title("📊 소비패턴 분석")
+auth.show_user_info()
 st.caption("입력된 데이터를 기반으로 소비패턴을 자동 분석합니다.")
 
 # ============================================================
@@ -54,6 +59,7 @@ start_date, end_date = date_range_selector(key_prefix="analysis")
 # 데이터 조회
 # ============================================================
 transactions = db.get_transactions(
+    user_id,
     start_date=str(start_date),
     end_date=str(end_date)
 )
@@ -141,7 +147,7 @@ st.markdown("---")
 st.subheader("💰 예산 대비 현황")
 
 current_month = date.today().strftime("%Y-%m")
-budgets = db.get_budgets(month=current_month)
+budgets = db.get_budgets(user_id, month=current_month)
 
 if budgets:
     expense_df = df[df["type"] == "expense"]
