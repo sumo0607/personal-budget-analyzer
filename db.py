@@ -2,11 +2,12 @@
 db.py - SQLite 데이터베이스 연결 및 CRUD 함수 모음
 ==================================================
 이 파일은 가계부 앱의 모든 데이터베이스 작업을 담당합니다.
-- 사용자 인증 (회원가입, 로그인)
+- 사용자 인증 (회원가입, 로그인, role 관리)
 - 테이블 생성 (users, transactions, categories, budgets)
 - 거래 추가/조회/수정/삭제
 - 카테고리 관리
 - 예산 관리
+- 관리자 전용 조회/관리 함수
 - 샘플 데이터 생성
 
 모든 데이터는 user_id로 구분되어 사용자별로 관리됩니다.
@@ -14,8 +15,7 @@ db.py - SQLite 데이터베이스 연결 및 CRUD 함수 모음
 
 import sqlite3
 import os
-import hashlib
-import secrets
+import bcrypt
 from datetime import datetime, date, timedelta
 import random
 
@@ -40,27 +40,19 @@ DEFAULT_PAYMENT_METHODS = ["현금", "카드", "이체", "기타"]
 
 
 # ============================================================
-# 비밀번호 해시 유틸리티
+# 비밀번호 해시 유틸리티 (bcrypt)
 # ============================================================
 
-def _hash_password(password):
-    """비밀번호를 PBKDF2로 해시합니다."""
-    salt = secrets.token_hex(16)
-    hash_val = hashlib.pbkdf2_hmac(
-        "sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000
-    )
-    return f"{salt}:{hash_val.hex()}"
+def hash_password(password):
+    """비밀번호를 bcrypt로 해시합니다."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-def _verify_password(password, stored_hash):
-    """비밀번호가 저장된 해시와 일치하는지 확인합니다."""
+def verify_password(password, stored_hash):
+    """비밀번호가 저장된 bcrypt 해시와 일치하는지 확인합니다."""
     try:
-        salt, hash_val = stored_hash.split(":")
-        new_hash = hashlib.pbkdf2_hmac(
-            "sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000
-        )
-        return new_hash.hex() == hash_val
-    except (ValueError, AttributeError):
+        return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
+    except Exception:
         return False
 
 
@@ -77,37 +69,48 @@ def get_connection():
     return conn
 
 
+def _raw_connection():
+    """row_factory 없는 원시 연결 (PRAGMA 조회용)."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+
+def _get_table_columns(table_name):
+    """테이블의 컬럼 이름 목록을 반환합니다."""
+    raw = _raw_connection()
+    cur = raw.cursor()
+    cur.execute(f"PRAGMA table_info({table_name})")
+    cols = [row[1] for row in cur.fetchall()]
+    raw.close()
+    return cols
+
+
 def init_db():
     """
     데이터베이스 테이블을 생성합니다.
-    기존에 user_id 없는 구 스키마가 감지되면 테이블을 재생성합니다.
+    기존 구 스키마 → 신 스키마 마이그레이션을 자동 수행합니다.
     """
     conn = get_connection()
     cursor = conn.cursor()
 
-    # ── 구 스키마 마이그레이션 ──
-    # foreign_keys를 잠시 끄고 마이그레이션 수행
+    # ── foreign_keys를 잠시 끄고 마이그레이션 수행 ──
     cursor.execute("PRAGMA foreign_keys=OFF")
+
     try:
+        # (1) 기존 transactions에 user_id가 없으면 구 스키마 → DROP 재생성
         cursor.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
         )
         if cursor.fetchone() is not None:
-            # row_factory를 무시하고 위치 인덱스로 접근하기 위해 별도 연결 사용
-            raw_conn = sqlite3.connect(DB_PATH)
-            raw_cursor = raw_conn.cursor()
-            raw_cursor.execute("PRAGMA table_info(transactions)")
-            columns = [row[1] for row in raw_cursor.fetchall()]
-            raw_conn.close()
-            if "user_id" not in columns:
+            cols = _get_table_columns("transactions")
+            if "user_id" not in cols:
                 cursor.execute("DROP TABLE IF EXISTS transactions")
                 cursor.execute("DROP TABLE IF EXISTS categories")
                 cursor.execute("DROP TABLE IF EXISTS budgets")
                 conn.commit()
     except Exception:
         pass
-    finally:
-        cursor.execute("PRAGMA foreign_keys=ON")
 
     # ── 사용자 테이블 ──
     cursor.execute("""
@@ -115,9 +118,19 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK(role IN ('user','admin')) DEFAULT 'user',
             created_at TEXT NOT NULL
         )
     """)
+
+    # users 테이블에 role 컬럼이 없으면 추가 (이전 버전 마이그레이션)
+    try:
+        user_cols = _get_table_columns("users")
+        if "role" not in user_cols:
+            cursor.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'")
+            conn.commit()
+    except Exception:
+        pass
 
     # ── 거래 내역 테이블 ──
     cursor.execute("""
@@ -160,8 +173,46 @@ def init_db():
         )
     """)
 
+    cursor.execute("PRAGMA foreign_keys=ON")
     conn.commit()
+
+    # ── 관리자 시드 ──
+    _seed_admin(conn)
+
     conn.close()
+
+
+def _seed_admin(conn):
+    """
+    관리자 계정이 없으면 자동 생성합니다.
+    환경변수 ADMIN_ID / ADMIN_PW 로 커스터마이징 가능합니다.
+    """
+    cursor = conn.cursor()
+    admin_username = os.environ.get("ADMIN_ID", "admin")
+
+    cursor.execute("SELECT id FROM users WHERE username = ?", (admin_username,))
+    if cursor.fetchone() is not None:
+        # 이미 존재하면 role만 admin으로 보장
+        cursor.execute(
+            "UPDATE users SET role='admin' WHERE username=?", (admin_username,)
+        )
+        conn.commit()
+        return
+
+    admin_password = os.environ.get("ADMIN_PW", "dkms3498!")
+    pw_hash = hash_password(admin_password)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, 'admin', ?)",
+            (admin_username, pw_hash, now),
+        )
+        conn.commit()
+        admin_id = cursor.lastrowid
+        _insert_default_categories(conn, admin_id)
+    except sqlite3.IntegrityError:
+        pass
 
 
 # ============================================================
@@ -170,7 +221,7 @@ def init_db():
 
 def register_user(username, password):
     """
-    새 사용자를 등록합니다.
+    새 사용자를 등록합니다 (role='user').
 
     Returns:
         int|None: 새 사용자 ID. 중복 아이디면 None.
@@ -178,19 +229,16 @@ def register_user(username, password):
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    password_hash = _hash_password(password)
+    pw_hash = hash_password(password)
 
     try:
         cursor.execute(
-            "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
-            (username, password_hash, now),
+            "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, 'user', ?)",
+            (username, pw_hash, now),
         )
         conn.commit()
         user_id = cursor.lastrowid
-
-        # 새 사용자에게 기본 카테고리 생성
         _insert_default_categories(conn, user_id)
-
         conn.close()
         return user_id
     except sqlite3.IntegrityError:
@@ -203,7 +251,7 @@ def authenticate_user(username, password):
     사용자를 인증합니다.
 
     Returns:
-        dict|None: 사용자 정보 {'id', 'username'} 또는 None
+        dict|None: {'id', 'username', 'role'} 또는 None
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -211,9 +259,86 @@ def authenticate_user(username, password):
     row = cursor.fetchone()
     conn.close()
 
-    if row and _verify_password(password, row["password_hash"]):
-        return {"id": row["id"], "username": row["username"]}
+    if row and verify_password(password, row["password_hash"]):
+        return {
+            "id": row["id"],
+            "username": row["username"],
+            "role": row["role"],
+        }
     return None
+
+
+# ============================================================
+# 관리자 전용: 사용자 관리
+# ============================================================
+
+def get_all_users():
+    """
+    모든 사용자 목록을 조회합니다 (관리자용).
+
+    Returns:
+        list[dict]: 사용자 목록 (id, username, role, created_at, tx_count)
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.id, u.username, u.role, u.created_at,
+               COALESCE(t.cnt, 0) AS tx_count
+        FROM users u
+        LEFT JOIN (
+            SELECT user_id, COUNT(*) AS cnt FROM transactions GROUP BY user_id
+        ) t ON u.id = t.user_id
+        ORDER BY u.id
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def update_user_role(user_id, new_role):
+    """사용자 role을 변경합니다."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET role=? WHERE id=?", (new_role, user_id))
+    conn.commit()
+    conn.close()
+
+
+def admin_get_transactions(
+    target_user_id,
+    start_date=None,
+    end_date=None,
+    tx_type=None,
+    categories=None,
+    payment_method=None,
+    keyword=None,
+    sort_by="date",
+    sort_order="DESC",
+):
+    """
+    관리자가 특정 사용자의 거래를 조회합니다.
+    get_transactions와 동일하지만 명시적으로 admin 용도임을 나타냅니다.
+    """
+    return get_transactions(
+        target_user_id,
+        start_date=start_date,
+        end_date=end_date,
+        tx_type=tx_type,
+        categories=categories,
+        payment_method=payment_method,
+        keyword=keyword,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
+
+
+def admin_delete_transaction(tx_id):
+    """관리자가 임의의 거래를 삭제합니다 (user_id 체크 없음)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM transactions WHERE id=?", (tx_id,))
+    conn.commit()
+    conn.close()
 
 
 # ============================================================
@@ -241,33 +366,16 @@ def _insert_default_categories(conn, user_id):
 # ============================================================
 
 def add_transaction(user_id, date_str, tx_type, amount, category, payment_method, memo=""):
-    """
-    새 거래를 추가합니다.
-
-    Args:
-        user_id (int): 사용자 ID
-        date_str (str): 날짜 (YYYY-MM-DD)
-        tx_type (str): 'income' 또는 'expense'
-        amount (float): 금액 (양수)
-        category (str): 카테고리명
-        payment_method (str): 결제수단
-        memo (str): 메모 (선택)
-
-    Returns:
-        int: 새로 생성된 거래 ID
-    """
+    """새 거래를 추가합니다."""
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute(
-        """
-        INSERT INTO transactions (user_id, date, type, amount, category, payment_method, memo, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """,
+        """INSERT INTO transactions (user_id, date, type, amount, category, payment_method, memo, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
         (user_id, date_str, tx_type, amount, category, payment_method, memo, now),
     )
-
     conn.commit()
     new_id = cursor.lastrowid
     conn.close()
@@ -285,23 +393,7 @@ def get_transactions(
     sort_by="date",
     sort_order="DESC",
 ):
-    """
-    조건에 맞는 거래 목록을 조회합니다.
-
-    Args:
-        user_id (int): 사용자 ID
-        start_date (str): 시작 날짜
-        end_date (str): 종료 날짜
-        tx_type (str): 'income', 'expense', 또는 None(전체)
-        categories (list): 카테고리 목록
-        payment_method (str): 결제수단 필터
-        keyword (str): 메모 검색 키워드
-        sort_by (str): 정렬 기준 ('date', 'amount')
-        sort_order (str): 정렬 방향 ('ASC', 'DESC')
-
-    Returns:
-        list[dict]: 거래 목록
-    """
+    """조건에 맞는 거래 목록을 조회합니다."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -329,7 +421,6 @@ def get_transactions(
         query += " AND memo LIKE ?"
         params.append(f"%{keyword}%")
 
-    # 정렬
     allowed_sort = {"date": "date", "amount": "amount", "created_at": "created_at"}
     sort_col = allowed_sort.get(sort_by, "date")
     order = "DESC" if sort_order == "DESC" else "ASC"
@@ -338,22 +429,17 @@ def get_transactions(
     cursor.execute(query, params)
     rows = cursor.fetchall()
     conn.close()
-
     return [dict(row) for row in rows]
 
 
-def update_transaction(
-    user_id, tx_id, date_str, tx_type, amount, category, payment_method, memo
-):
-    """기존 거래를 수정합니다. user_id가 일치하는 경우에만 수정."""
+def update_transaction(user_id, tx_id, date_str, tx_type, amount, category, payment_method, memo):
+    """기존 거래를 수정합니다."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        """
-        UPDATE transactions
-        SET date=?, type=?, amount=?, category=?, payment_method=?, memo=?
-        WHERE id=? AND user_id=?
-    """,
+        """UPDATE transactions
+           SET date=?, type=?, amount=?, category=?, payment_method=?, memo=?
+           WHERE id=? AND user_id=?""",
         (date_str, tx_type, amount, category, payment_method, memo, tx_id, user_id),
     )
     conn.commit()
@@ -361,23 +447,19 @@ def update_transaction(
 
 
 def delete_transaction(user_id, tx_id):
-    """거래를 삭제합니다. user_id가 일치하는 경우에만 삭제."""
+    """거래를 삭제합니다."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "DELETE FROM transactions WHERE id=? AND user_id=?", (tx_id, user_id)
-    )
+    cursor.execute("DELETE FROM transactions WHERE id=? AND user_id=?", (tx_id, user_id))
     conn.commit()
     conn.close()
 
 
 def get_transaction_by_id(user_id, tx_id):
-    """ID로 단일 거래를 조회합니다. user_id가 일치하는 경우에만 반환."""
+    """ID로 단일 거래를 조회합니다."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM transactions WHERE id=? AND user_id=?", (tx_id, user_id)
-    )
+    cursor.execute("SELECT * FROM transactions WHERE id=? AND user_id=?", (tx_id, user_id))
     row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
@@ -388,16 +470,7 @@ def get_transaction_by_id(user_id, tx_id):
 # ============================================================
 
 def get_categories(user_id, tx_type=None):
-    """
-    해당 사용자의 카테고리 목록을 조회합니다.
-
-    Args:
-        user_id (int): 사용자 ID
-        tx_type (str): 'income', 'expense', 또는 None(전체)
-
-    Returns:
-        list[str]: 카테고리명 목록
-    """
+    """해당 사용자의 카테고리 목록을 조회합니다."""
     conn = get_connection()
     cursor = conn.cursor()
     if tx_type:
@@ -449,26 +522,13 @@ def delete_category(user_id, tx_type, name):
 # ============================================================
 
 def get_budgets(user_id, month=None):
-    """
-    해당 사용자의 예산 목록을 조회합니다.
-
-    Args:
-        user_id (int): 사용자 ID
-        month (str): 'YYYY-MM' 형식. None이면 전체 조회
-
-    Returns:
-        list[dict]: 예산 목록
-    """
+    """해당 사용자의 예산 목록을 조회합니다."""
     conn = get_connection()
     cursor = conn.cursor()
     if month:
-        cursor.execute(
-            "SELECT * FROM budgets WHERE user_id=? AND month=?", (user_id, month)
-        )
+        cursor.execute("SELECT * FROM budgets WHERE user_id=? AND month=?", (user_id, month))
     else:
-        cursor.execute(
-            "SELECT * FROM budgets WHERE user_id=? ORDER BY month DESC", (user_id,)
-        )
+        cursor.execute("SELECT * FROM budgets WHERE user_id=? ORDER BY month DESC", (user_id,))
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -479,11 +539,9 @@ def set_budget(user_id, month, category, amount):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        """
-        INSERT INTO budgets (user_id, month, category, budget_amount)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(user_id, month, category) DO UPDATE SET budget_amount=?
-    """,
+        """INSERT INTO budgets (user_id, month, category, budget_amount)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(user_id, month, category) DO UPDATE SET budget_amount=?""",
         (user_id, month, category, amount, amount),
     )
     conn.commit()
@@ -491,12 +549,10 @@ def set_budget(user_id, month, category, amount):
 
 
 def delete_budget(user_id, budget_id):
-    """예산을 삭제합니다. user_id가 일치하는 경우에만 삭제."""
+    """예산을 삭제합니다."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "DELETE FROM budgets WHERE id=? AND user_id=?", (budget_id, user_id)
-    )
+    cursor.execute("DELETE FROM budgets WHERE id=? AND user_id=?", (budget_id, user_id))
     conn.commit()
     conn.close()
 
@@ -506,7 +562,7 @@ def delete_budget(user_id, budget_id):
 # ============================================================
 
 def clear_all_data(user_id):
-    """해당 사용자의 모든 거래 데이터를 삭제합니다. (카테고리/예산은 유지)"""
+    """해당 사용자의 모든 거래 데이터를 삭제합니다."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM transactions WHERE user_id=?", (user_id,))
@@ -527,13 +583,7 @@ def clear_everything(user_id):
 
 
 def generate_sample_data(user_id, num_months=3):
-    """
-    데모용 샘플 데이터를 생성합니다.
-
-    Args:
-        user_id (int): 사용자 ID
-        num_months (int): 몇 개월치 데이터를 생성할지
-    """
+    """데모용 샘플 데이터를 생성합니다."""
     today = date.today()
     methods = DEFAULT_PAYMENT_METHODS
 
@@ -548,12 +598,10 @@ def generate_sample_data(user_id, num_months=3):
         "경조사": (30000, 100000, 1),
         "기타지출": (5000, 30000, 2),
     }
-
     income_patterns = {
         "급여": (2500000, 3500000, 1),
         "부수입": (100000, 500000, 1),
     }
-
     memos_expense = [
         "점심식사", "커피", "택시", "버스", "지하철", "마트장보기",
         "온라인쇼핑", "영화관람", "책구입", "약국", "통신비",
@@ -569,7 +617,6 @@ def generate_sample_data(user_id, num_months=3):
             target_month += 12
             target_year -= 1
 
-        # 지출 생성
         for cat, (min_amt, max_amt, avg_count) in expense_patterns.items():
             n = random.randint(max(1, avg_count - 1), avg_count + 1)
             for _ in range(n):
@@ -581,7 +628,6 @@ def generate_sample_data(user_id, num_months=3):
                 add_transaction(user_id, d, "expense", amt, cat, method, memo)
                 count += 1
 
-        # 수입 생성
         for cat, (min_amt, max_amt, avg_count) in income_patterns.items():
             n = avg_count
             for _ in range(n):
@@ -596,15 +642,7 @@ def generate_sample_data(user_id, num_months=3):
 
 
 def export_transactions_csv(user_id, start_date=None, end_date=None):
-    """
-    거래 내역을 CSV 문자열로 내보냅니다.
-
-    Args:
-        user_id (int): 사용자 ID
-
-    Returns:
-        str: CSV 형식 문자열
-    """
+    """거래 내역을 CSV 문자열로 내보냅니다."""
     import io
     import csv
 
@@ -612,11 +650,8 @@ def export_transactions_csv(user_id, start_date=None, end_date=None):
         user_id, start_date=start_date, end_date=end_date,
         sort_by="date", sort_order="ASC"
     )
-
     output = io.StringIO()
     writer = csv.writer(output)
-
-    # 헤더
     writer.writerow(["날짜", "유형", "금액", "카테고리", "결제수단", "메모"])
 
     type_map = {"income": "수입", "expense": "지출"}
@@ -629,5 +664,4 @@ def export_transactions_csv(user_id, start_date=None, end_date=None):
             tx["payment_method"],
             tx["memo"],
         ])
-
     return output.getvalue()
