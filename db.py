@@ -86,18 +86,28 @@ def init_db():
     cursor = conn.cursor()
 
     # ── 구 스키마 마이그레이션 ──
-    # 기존 transactions 테이블에 user_id 컬럼이 없으면 구 스키마로 판단하여 재생성
-    cursor.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
-    )
-    if cursor.fetchone() is not None:
-        cursor.execute("PRAGMA table_info(transactions)")
-        columns = [col[1] for col in cursor.fetchall()]
-        if "user_id" not in columns:
-            cursor.execute("DROP TABLE IF EXISTS transactions")
-            cursor.execute("DROP TABLE IF EXISTS categories")
-            cursor.execute("DROP TABLE IF EXISTS budgets")
-            conn.commit()
+    # foreign_keys를 잠시 끄고 마이그레이션 수행
+    cursor.execute("PRAGMA foreign_keys=OFF")
+    try:
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='transactions'"
+        )
+        if cursor.fetchone() is not None:
+            # row_factory를 무시하고 위치 인덱스로 접근하기 위해 별도 연결 사용
+            raw_conn = sqlite3.connect(DB_PATH)
+            raw_cursor = raw_conn.cursor()
+            raw_cursor.execute("PRAGMA table_info(transactions)")
+            columns = [row[1] for row in raw_cursor.fetchall()]
+            raw_conn.close()
+            if "user_id" not in columns:
+                cursor.execute("DROP TABLE IF EXISTS transactions")
+                cursor.execute("DROP TABLE IF EXISTS categories")
+                cursor.execute("DROP TABLE IF EXISTS budgets")
+                conn.commit()
+    except Exception:
+        pass
+    finally:
+        cursor.execute("PRAGMA foreign_keys=ON")
 
     # ── 사용자 테이블 ──
     cursor.execute("""
