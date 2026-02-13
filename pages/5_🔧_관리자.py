@@ -4,7 +4,7 @@
 관리자(role=admin)만 접근할 수 있는 페이지입니다.
 
 [탭 구성]
-A) 가입자 목록 / 권한 관리
+A) 가입자 목록 / 권한 관리 / 비밀번호 재설정
 B) 사용자 상세 / 거래 내역 조회·삭제
 """
 
@@ -27,16 +27,9 @@ from ui_components import (
     create_category_pie_chart,
 )
 
-# ============================================================
-# 페이지 설정
-# ============================================================
-st.set_page_config(page_title="🔧 관리자", page_icon="🔧", layout="wide")
-db.init_db()
-
 # 관리자 권한 검사
 admin_id = auth.require_admin()
 st.title("🔧 관리자 패널")
-auth.show_user_info()
 st.caption("사용자 관리 및 전체 거래 내역을 관리합니다.")
 
 # ============================================================
@@ -62,6 +55,8 @@ with tab_users:
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
         st.markdown("---")
+
+        # ── 권한 변경 ──
         st.subheader("🔄 권한 변경")
 
         col1, col2, col3 = st.columns([2, 2, 1])
@@ -94,6 +89,35 @@ with tab_users:
                 )
                 st.rerun()
 
+        st.markdown("---")
+
+        # ── 비밀번호 재설정 ──
+        st.subheader("🔒 비밀번호 재설정")
+        st.caption("선택한 사용자의 비밀번호를 강제로 변경합니다.")
+
+        with st.form("admin_pw_reset"):
+            col_a, col_b = st.columns(2)
+            with col_a:
+                pw_user_options = {u["id"]: u["username"] for u in users}
+                pw_target_uid = st.selectbox(
+                    "사용자 선택",
+                    options=list(pw_user_options.keys()),
+                    format_func=lambda x: pw_user_options[x],
+                    key="pw_reset_user",
+                )
+            with col_b:
+                new_password = st.text_input("새 비밀번호", type="password", key="pw_reset_val")
+
+            if st.form_submit_button("🔒 비밀번호 재설정", type="primary", use_container_width=True):
+                if not new_password:
+                    st.error("새 비밀번호를 입력해주세요.")
+                elif len(new_password) < 4:
+                    st.error("비밀번호는 4자 이상이어야 합니다.")
+                else:
+                    db.admin_reset_password(pw_target_uid, new_password)
+                    target_name = pw_user_options.get(pw_target_uid, "")
+                    st.success(f"✅ **{target_name}** 의 비밀번호가 재설정되었습니다.")
+
 # ============================================================
 # 탭 B : 사용자 상세 / 거래 내역
 # ============================================================
@@ -105,19 +129,21 @@ with tab_detail:
         st.info("가입된 사용자가 없습니다.")
         st.stop()
 
-    # ── 사이드바: 사용자 선택 + 필터 ──
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🔧 관리자 필터")
-
-    user_map = {u["id"]: u["username"] for u in users}
-    target_uid = st.sidebar.selectbox(
-        "👤 사용자 선택",
+    # ── 사용자 선택 (메인 영역 드롭다운) ──
+    user_map = {u["id"]: f'{u["username"]}  (거래 {u["tx_count"]}건)' for u in users}
+    target_uid = st.selectbox(
+        "👤 조회할 사용자 선택",
         options=list(user_map.keys()),
-        format_func=lambda x: f"{user_map[x]} (ID:{x})",
+        format_func=lambda x: user_map[x],
         key="admin_target_user",
     )
 
-    # 기간 필터
+    st.markdown("---")
+
+    # ── 필터 (사이드바) ──
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🔧 관리자 필터")
+
     period = st.sidebar.selectbox(
         "📅 기간",
         ["이번 달", "지난 달", "최근 3개월", "전체", "사용자 지정"],
@@ -164,7 +190,8 @@ with tab_detail:
         keyword=keyword if keyword else None,
     )
 
-    st.markdown(f"#### 📌 **{user_map[target_uid]}** 님의 거래 내역")
+    selected_username = next((u["username"] for u in users if u["id"] == target_uid), "")
+    st.markdown(f"#### 📌 **{selected_username}** 님의 거래 내역")
 
     if not transactions:
         show_empty_state(
@@ -179,7 +206,7 @@ with tab_detail:
 
         st.markdown("---")
 
-        # ── 차트 (지출 추이 + 카테고리) ──
+        # ── 차트 ──
         chart_col1, chart_col2 = st.columns(2)
         with chart_col1:
             expense_by_date = analytics.get_expense_by_date(df)
@@ -194,8 +221,8 @@ with tab_detail:
 
         # ── 거래 테이블 ──
         display_df = pd.DataFrame(transactions)
-        type_map = {"income": "🟢 수입", "expense": "🔴 지출"}
-        display_df["유형"] = display_df["type"].map(type_map)
+        type_vis_map = {"income": "🟢 수입", "expense": "🔴 지출"}
+        display_df["유형"] = display_df["type"].map(type_vis_map)
         display_df["금액표시"] = display_df["amount"].apply(lambda x: f"{x:,.0f}원")
 
         show_df = display_df[

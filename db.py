@@ -665,3 +665,34 @@ def export_transactions_csv(user_id, start_date=None, end_date=None):
             tx["memo"],
         ])
     return output.getvalue()
+
+
+# ============================================================
+# 비밀번호 변경
+# ============================================================
+
+def verify_user_password(user_id, password):
+    """현재 비밀번호가 맞는지 확인합니다."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT password_hash FROM users WHERE id=?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return verify_password(password, row["password_hash"])
+    return False
+
+
+def change_password(user_id, new_password):
+    """사용자 비밀번호를 변경합니다."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    pw_hash = hash_password(new_password)
+    cursor.execute("UPDATE users SET password_hash=? WHERE id=?", (pw_hash, user_id))
+    conn.commit()
+    conn.close()
+
+
+def admin_reset_password(user_id, new_password):
+    """관리자가 특정 사용자의 비밀번호를 재설정합니다."""
+    change_password(user_id, new_password)
