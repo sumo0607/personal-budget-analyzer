@@ -29,36 +29,31 @@ st.set_page_config(
 db.init_db()
 
 # ============================================================
-# 인증 확인
+# 내비게이션 구성 (항상 st.navigation() 호출하여 auto-discovery 비활성화)
 # ============================================================
-if not auth.is_logged_in():
-    # 미로그인 → 로그인/회원가입 화면
-    auth.require_login()
-    # require_login 내부에서 st.stop() 호출되므로 아래 코드는 실행 안 됨
+if auth.is_logged_in():
+    # ── 로그인 됨: 사이드바 정보 + 역할 기반 메뉴 ──
+    st.sidebar.title("💰 가계부 분석기")
+    auth.show_user_info()
 
-# ============================================================
-# 사이드바 - 사용자 정보
-# ============================================================
-st.sidebar.title("💰 가계부 분석기")
-auth.show_user_info()
-
-# ============================================================
-# 내비게이션 구성 (역할 기반)
-# ============================================================
-main_pages = [
-    st.Page("pages/0_🏠_대시보드.py", title="대시보드", icon="🏠", default=True),
-    st.Page("pages/1_📝_입력.py", title="거래 입력", icon="📝"),
-    st.Page("pages/2_📋_내역.py", title="거래 내역", icon="📋"),
-    st.Page("pages/3_📊_분석.py", title="소비 분석", icon="📊"),
-    st.Page("pages/4_⚙️_설정.py", title="설정", icon="⚙️"),
-]
-
-nav_config = {"메뉴": main_pages}
-
-if auth.get_role() == "admin":
-    nav_config["관리"] = [
-        st.Page("pages/5_🔧_관리자.py", title="관리자 패널", icon="🔧"),
+    main_pages = [
+        st.Page("pages/0_🏠_대시보드.py", title="대시보드", icon="🏠", default=True),
+        st.Page("pages/1_📝_입력.py", title="거래 입력", icon="📝"),
+        st.Page("pages/2_📋_내역.py", title="거래 내역", icon="📋"),
+        st.Page("pages/3_📊_분석.py", title="소비 분석", icon="📊"),
+        st.Page("pages/4_⚙️_설정.py", title="설정", icon="⚙️"),
     ]
 
-pg = st.navigation(nav_config)
+    nav_config = {"메뉴": main_pages}
+
+    if auth.get_role() == "admin":
+        nav_config["관리"] = [
+            st.Page("pages/5_🔧_관리자.py", title="관리자 패널", icon="🔧"),
+        ]
+
+    pg = st.navigation(nav_config)
+else:
+    # ── 미로그인: 로그인 페이지만 표시 ──
+    pg = st.navigation([st.Page(auth._show_auth_ui, title="로그인", icon="🔑")])
+
 pg.run()
