@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "Get-Content -Raw '.github/copilot-instructions.md' | Out-String",
+        "windows": "Get-Content -Raw '.github/copilot-instructions.md' | Out-String",
+        "linux": "cat .github/copilot-instructions.md",
+        "osx": "cat .github/copilot-instructions.md",
+        "timeout": 5
+      },
+      {
+        "type": "command",
+        "command": "pwsh -NoProfile -File .github/hooks/scripts/project-status.ps1",
+        "timeout": 10
+      }
+    ]
+  }
+}

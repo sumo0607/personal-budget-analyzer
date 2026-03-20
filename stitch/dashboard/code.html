@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>가계부 분석기 - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline": "#70787d",
+              "tertiary-fixed-dim": "#b4cad6",
+              "secondary-fixed-dim": "#70d8c8",
+              "on-background": "#191c1d",
+              "inverse-on-surface": "#f0f1f2",
+              "on-tertiary-fixed": "#071e27",
+              "on-secondary-container": "#007165",
+              "on-surface-variant": "#40484d",
+              "on-secondary-fixed": "#00201c",
+              "on-secondary-fixed-variant": "#005048",
+              "on-surface": "#191c1d",
+              "inverse-surface": "#2e3132",
+              "on-tertiary-fixed-variant": "#354a53",
+              "surface": "#f8f9fa",
+              "surface-bright": "#f8f9fa",
+              "surface-container-low": "#f3f4f5",
+              "surface-container-highest": "#e1e3e4",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#cfe6f2",
+              "error-container": "#ffdad6",
+              "surface-container-high": "#e7e8e9",
+              "surface-container": "#edeeef",
+              "secondary": "#006b5f",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffffff",
+              "primary": "#00475e",
+              "secondary-container": "#8df5e4",
+              "primary-fixed-dim": "#92cfee",
+              "on-secondary": "#ffffff",
+              "on-primary-fixed-variant": "#004d66",
+              "on-primary-container": "#9bd7f7",
+              "on-tertiary-container": "#bcd2de",
+              "outline-variant": "#c0c8cd",
+              "error": "#ba1a1a",
+              "surface-dim": "#d9dadb",
+              "on-primary-fixed": "#001e2b",
+              "on-tertiary": "#ffffff",
+              "surface-variant": "#e1e3e4",
+              "primary-fixed": "#c0e8ff",
+              "primary-container": "#1a5f7a",
+              "on-error-container": "#93000a",
+              "secondary-fixed": "#8df5e4",
+              "inverse-primary": "#92cfee",
+              "tertiary": "#2f444d",
+              "tertiary-container": "#465b65",
+              "surface-tint": "#236580",
+              "background": "#f8f9fa"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-[#f8f9fa]/80 dark:bg-[#191c1d]/80 backdrop-blur-md bg-gradient-to-b from-[#f8f9fa] to-transparent shadow-none">
+<div class="flex justify-between items-center px-6 h-16 w-full max-w-md mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed overflow-hidden">
+<img alt="User Profile" data-alt="User profile avatar icon placeholder" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjC_zZzx8ScgcwQIllvqB88sqYxoS2sbTSSSplFUn5LO6hLwCSqtcTG4jNF5hKL2t3vQdKBqAy76wDK9MYcHMjnytdACxtw4Jo6w1d9f6P11RvJj7Hl_UdFz2V6YdseYzy9uEanExj35qM7BiuavxYLE8LH2Hend8b5A9lOxWe-ARuL6zjXoQ_CK-NXZt0VD-WB6C9eLVc9Qh545sk9GulZJzH8s5yPXiMHfEn4ss3MflrnyaA_UZNyeLxThK5ExHHZKt69mWczsPs"/>
+</div>
+<span class="text-[#00475e] font-extrabold tracking-tighter font-headline text-lg">Analyzer</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#f3f4f5]/50 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#00475e]">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-20 px-6 max-w-md mx-auto space-y-8">
+<!-- Hero Section: Total Balance -->
+<section class="mt-4">
+<p class="text-on-surface-variant font-label text-xs uppercase tracking-widest font-bold mb-1">이번 달 순수익</p>
+<div class="flex items-baseline gap-1">
+<h1 class="text-[3.5rem] font-headline font-extrabold text-primary tracking-tight leading-none">₩1,240</h1>
+<span class="text-xl font-headline font-bold text-primary-container">,000</span>
+</div>
+</section>
+<!-- Metric Cards Bento Grid -->
+<section class="grid grid-cols-2 gap-4">
+<!-- Total Income -->
+<div class="bg-surface-container-lowest p-5 rounded-xl flex flex-col justify-between h-32 shadow-[0_4px_20px_rgba(0,71,94,0.04)] border-l-4 border-secondary">
+<span class="material-symbols-outlined text-secondary text-2xl">account_balance_wallet</span>
+<div>
+<p class="text-on-surface-variant font-label text-[10px] font-bold uppercase">총수입</p>
+<p class="text-secondary font-headline font-bold text-lg leading-tight">₩4,500,000</p>
+</div>
+</div>
+<!-- Total Expense -->
+<div class="bg-surface-container-lowest p-5 rounded-xl flex flex-col justify-between h-32 shadow-[0_4px_20px_rgba(0,71,94,0.04)]">
+<span class="material-symbols-outlined text-error text-2xl">receipt_long</span>
+<div>
+<p class="text-on-surface-variant font-label text-[10px] font-bold uppercase">총지출</p>
+<p class="text-error font-headline font-bold text-lg leading-tight">₩3,260,000</p>
+</div>
+</div>
+<!-- Daily Average -->
+<div class="bg-surface-container-low p-5 rounded-xl flex flex-col justify-between h-32">
+<span class="material-symbols-outlined text-primary text-2xl">calendar_today</span>
+<div>
+<p class="text-on-surface-variant font-label text-[10px] font-bold uppercase">일평균지출</p>
+<p class="text-on-surface font-headline font-bold text-lg leading-tight">₩108,660</p>
+</div>
+</div>
+<!-- Target Progress -->
+<div class="bg-surface-container-low p-5 rounded-xl flex flex-col justify-between h-32">
+<span class="material-symbols-outlined text-primary text-2xl">bolt</span>
+<div>
+<p class="text-on-surface-variant font-label text-[10px] font-bold uppercase">예산 대비</p>
+<p class="text-on-surface font-headline font-bold text-lg leading-tight">82% 사용</p>
+</div>
+</div>
+</section>
+<!-- Chart Section: Trends -->
+<section class="space-y-4">
+<div class="flex justify-between items-end">
+<h2 class="text-xl font-headline font-bold text-primary tracking-tight">지출추이</h2>
+<span class="text-xs text-on-surface-variant font-label font-semibold">최근 6개월</span>
+</div>
+<div class="bg-primary-container rounded-3xl p-6 h-48 relative overflow-hidden flex items-end gap-2">
+<!-- Simple Gradient CSS Chart Representation -->
+<div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 24px 24px;"></div>
+<div class="flex-1 bg-primary-fixed-dim rounded-t-lg" style="height: 40%"></div>
+<div class="flex-1 bg-primary-fixed-dim rounded-t-lg" style="height: 60%"></div>
+<div class="flex-1 bg-primary-fixed-dim rounded-t-lg" style="height: 55%"></div>
+<div class="flex-1 bg-white rounded-t-lg" style="height: 85%"></div>
+<div class="flex-1 bg-primary-fixed-dim rounded-t-lg" style="height: 70%"></div>
+<div class="flex-1 bg-primary-fixed-dim rounded-t-lg" style="height: 65%"></div>
+</div>
+</section>
+<!-- Category Breakdown -->
+<section class="space-y-4">
+<h2 class="text-xl font-headline font-bold text-primary tracking-tight">카테고리별 비중</h2>
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+<div class="min-w-[140px] bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-primary">
+<span class="material-symbols-outlined text-primary mb-2">restaurant</span>
+<p class="text-xs font-bold text-on-surface-variant">식비</p>
+<p class="text-lg font-headline font-bold">35%</p>
+</div>
+<div class="min-w-[140px] bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-tertiary">
+<span class="material-symbols-outlined text-tertiary mb-2">directions_car</span>
+<p class="text-xs font-bold text-on-surface-variant">교통</p>
+<p class="text-lg font-headline font-bold">22%</p>
+</div>
+<div class="min-w-[140px] bg-surface-container-lowest p-4 rounded-2xl shadow-sm border-l-4 border-secondary-fixed-dim">
+<span class="material-symbols-outlined text-secondary mb-2">shopping_bag</span>
+<p class="text-xs font-bold text-on-surface-variant">쇼핑</p>
+<p class="text-lg font-headline font-bold">18%</p>
+</div>
+</div>
+</section>
+<!-- Recent Insights -->
+<section class="space-y-4">
+<h2 class="text-xl font-headline font-bold text-primary tracking-tight">Recent Insights</h2>
+<div class="space-y-3">
+<div class="flex items-start gap-4 p-4 bg-secondary-container rounded-2xl">
+<div class="w-10 h-10 rounded-full bg-on-secondary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary-container text-xl" style="font-variation-settings: 'FILL' 1;">trending_down</span>
+</div>
+<div>
+<h3 class="font-bold text-on-secondary-container text-sm">절약 성공!</h3>
+<p class="text-on-secondary-container/80 text-xs mt-0.5">지난주 대비 식비 지출이 12% 감소했습니다. 이 추세를 유지하세요.</p>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 bg-error-container rounded-2xl">
+<div class="w-10 h-10 rounded-full bg-error flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-error-container text-xl" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<h3 class="font-bold text-on-error-container text-sm">예산 초과 주의</h3>
+<p class="text-on-error-container/80 text-xs mt-0.5">쇼핑 카테고리 예산의 95%를 사용했습니다. 추가 지출에 유의하세요.</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-[#f8f9fa]/80 dark:bg-[#191c1d]/80 backdrop-blur-xl rounded-t-[1.5rem] border-t border-[#c0c8cd]/20 shadow-[0_-4px_24px_rgba(0,71,94,0.06)]">
+<div class="flex justify-around items-center px-4 pb-6 pt-3 w-full max-w-md mx-auto">
+<!-- Active: Dashboard -->
+<a class="flex flex-col items-center justify-center bg-[#00475e] text-white dark:bg-[#c0e8ff] dark:text-[#003547] rounded-xl px-3 py-1.5 transition-all duration-300 active:scale-90" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">대시보드</span>
+</a>
+<!-- Inactive: Input -->
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">edit_square</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">입력</span>
+</a>
+<!-- Inactive: History -->
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">내역</span>
+</a>
+<!-- Inactive: Analyze -->
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">분석</span>
+</a>
+<!-- Inactive: Settings -->
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] transition-all duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">설정</span>
+</a>
+</div>
+</nav>
+<!-- Floating Action Button for Adding Record (Contextual) -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center z-40 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</body></html>

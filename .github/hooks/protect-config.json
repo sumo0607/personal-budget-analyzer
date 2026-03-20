@@ -1,0 +1,13 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "pwsh -NoProfile -File .github/hooks/scripts/protect-config.ps1",
+        "linux": "pwsh -NoProfile -File .github/hooks/scripts/protect-config.ps1",
+        "osx": "pwsh -NoProfile -File .github/hooks/scripts/protect-config.ps1",
+        "timeout": 5
+      }
+    ]
+  }
+}

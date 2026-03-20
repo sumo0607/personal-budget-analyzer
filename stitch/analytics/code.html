@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "outline": "#70787d",
+              "tertiary-fixed-dim": "#b4cad6",
+              "secondary-fixed-dim": "#70d8c8",
+              "on-background": "#191c1d",
+              "inverse-on-surface": "#f0f1f2",
+              "on-tertiary-fixed": "#071e27",
+              "on-secondary-container": "#007165",
+              "on-surface-variant": "#40484d",
+              "on-secondary-fixed": "#00201c",
+              "on-secondary-fixed-variant": "#005048",
+              "on-surface": "#191c1d",
+              "inverse-surface": "#2e3132",
+              "on-tertiary-fixed-variant": "#354a53",
+              "surface": "#f8f9fa",
+              "surface-bright": "#f8f9fa",
+              "surface-container-low": "#f3f4f5",
+              "surface-container-highest": "#e1e3e4",
+              "on-primary": "#ffffff",
+              "tertiary-fixed": "#cfe6f2",
+              "error-container": "#ffdad6",
+              "surface-container-high": "#e7e8e9",
+              "surface-container": "#edeeef",
+              "secondary": "#006b5f",
+              "surface-container-lowest": "#ffffff",
+              "on-error": "#ffffff",
+              "primary": "#00475e",
+              "secondary-container": "#8df5e4",
+              "primary-fixed-dim": "#92cfee",
+              "on-secondary": "#ffffff",
+              "on-primary-fixed-variant": "#004d66",
+              "on-primary-container": "#9bd7f7",
+              "on-tertiary-container": "#bcd2de",
+              "outline-variant": "#c0c8cd",
+              "error": "#ba1a1a",
+              "surface-dim": "#d9dadb",
+              "on-primary-fixed": "#001e2b",
+              "on-tertiary": "#ffffff",
+              "surface-variant": "#e1e3e4",
+              "primary-fixed": "#c0e8ff",
+              "primary-container": "#1a5f7a",
+              "on-error-container": "#93000a",
+              "secondary-fixed": "#8df5e4",
+              "inverse-primary": "#92cfee",
+              "tertiary": "#2f444d",
+              "tertiary-container": "#465b65",
+              "surface-tint": "#236580",
+              "background": "#f8f9fa"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f8f9fa]/80 dark:bg-[#191c1d]/80 backdrop-blur-md">
+<div class="flex justify-between items-center px-6 h-16 w-full max-w-md mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden">
+<img alt="User Profile" data-alt="User profile avatar circular icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeD4Rk-nJM0E8cQW1wLKUQqeajhBaLZbbDCSJPjIbodNQtqIt9lPE-vTg1dxeRnpk7ha5jHWzAybHRyaQMzHsfgmCAGan36hM68a7xcxkxgRP0TAMvuteafW0Zchi7c5jomgA5a8W2187PAvcm8Hq2kVRO4q6gg_pG2WUXM5Ra-797xnxl_0v5FKIeX5F-NmO0LNKoYjuosflfoF4q2iGrL6uejkq9ayWVytlk0y6reHwh6HcF5Fm26sUPfZPmCcXswsQSNck04Mfu"/>
+</div>
+<h1 class="font-['Manrope'] font-bold text-lg tracking-tight text-[#00475e] dark:text-[#c0e8ff]">Analyzer</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-[#00475e] dark:text-[#c0e8ff] active:scale-95 transition-transform duration-200">notifications</button>
+</div>
+</div>
+</header>
+<main class="mt-20 px-6 max-w-md mx-auto">
+<!-- Hero Section: Monthly Spending -->
+<section class="mb-10">
+<p class="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">소비 분석</p>
+<div class="relative overflow-hidden p-6 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white shadow-xl">
+<div class="absolute -right-4 -top-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+<h2 class="font-headline text-3xl font-extrabold tracking-tight">₩2,450,000</h2>
+<p class="text-primary-fixed text-sm font-medium mt-1">지난달보다 12% 적게 썼어요</p>
+</div>
+</section>
+<!-- Analytic Tabs -->
+<section class="mb-8">
+<div class="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+<button class="flex-shrink-0 px-4 py-2 bg-primary text-white rounded-full text-sm font-semibold shadow-md">지출추이</button>
+<button class="flex-shrink-0 px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium">카테고리비중</button>
+<button class="flex-shrink-0 px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium">결제수단별</button>
+<button class="flex-shrink-0 px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium">요일별</button>
+<button class="flex-shrink-0 px-4 py-2 bg-surface-container-high text-on-surface-variant rounded-full text-sm font-medium">월별비교</button>
+</div>
+<!-- Visualization Canvas (Placeholder for Trend Chart) -->
+<div class="mt-4 bg-surface-container-lowest rounded-xl p-5 shadow-sm min-h-[220px] flex flex-col justify-end relative">
+<div class="absolute top-5 left-5">
+<h3 class="font-bold text-on-surface">최근 6개월 추이</h3>
+<p class="text-xs text-on-surface-variant">2023.10 - 2024.03</p>
+</div>
+<!-- Mock Chart Visualization -->
+<div class="flex items-end justify-between h-32 gap-3 px-2">
+<div class="flex-1 bg-surface-container-highest rounded-t-lg h-[40%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t-lg h-[60%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t-lg h-[55%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t-lg h-[80%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t-lg h-[70%]"></div>
+<div class="flex-1 bg-primary rounded-t-lg h-[95%]"></div>
+</div>
+<div class="flex justify-between mt-4 px-1">
+<span class="text-[10px] text-outline">10월</span>
+<span class="text-[10px] text-outline">11월</span>
+<span class="text-[10px] text-outline">12월</span>
+<span class="text-[10px] text-outline">1월</span>
+<span class="text-[10px] text-outline">2월</span>
+<span class="text-[10px] text-primary font-bold">3월</span>
+</div>
+</div>
+</section>
+<!-- Insights Bento Grid -->
+<section class="mb-10">
+<h3 class="font-headline font-bold text-lg mb-4 px-1">AI 통찰</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 p-4 bg-secondary-container text-on-secondary-container rounded-xl flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary">lightbulb</span>
+<div>
+<p class="font-bold text-sm">배달 음식 지출이 늘고 있어요</p>
+<p class="text-xs opacity-80">최근 2주간 배달 앱 사용 횟수가 평소보다 4회 더 많습니다.</p>
+</div>
+</div>
+<div class="p-4 bg-surface-container-lowest rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-primary mb-2">savings</span>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-tighter">절약 가능액</p>
+<p class="text-lg font-bold">₩45,200</p>
+</div>
+<div class="p-4 bg-surface-container-lowest rounded-xl shadow-sm border-l-4 border-error">
+<span class="material-symbols-outlined text-error mb-2">warning</span>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-tighter">주의 카테고리</p>
+<p class="text-lg font-bold">쇼핑/구독</p>
+</div>
+</div>
+</section>
+<!-- Budget Status -->
+<section class="mb-10">
+<div class="flex justify-between items-end mb-4 px-1">
+<h3 class="font-headline font-bold text-lg">예산 현황</h3>
+<button class="text-primary text-xs font-bold">상세보기</button>
+</div>
+<div class="space-y-6">
+<!-- Healthy Category -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm">
+<div class="flex justify-between mb-2">
+<span class="font-bold text-sm">식비</span>
+<span class="text-xs text-secondary font-bold">75% 사용</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 75%"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] text-on-surface-variant">
+<span>₩450,000 / ₩600,000</span>
+<span class="font-medium text-secondary">₩150,000 남음</span>
+</div>
+</div>
+<!-- Over Budget Category -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm">
+<div class="flex justify-between mb-2">
+<span class="font-bold text-sm">카페 / 간식</span>
+<span class="text-xs text-error font-bold">110% 사용</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 100%"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] text-on-surface-variant">
+<span>₩110,000 / ₩100,000</span>
+<span class="font-medium text-error">₩10,000 초과</span>
+</div>
+</div>
+<!-- Near Limit -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm">
+<div class="flex justify-between mb-2">
+<span class="font-bold text-sm">교통 / 통신</span>
+<span class="text-xs text-primary font-bold">92% 사용</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 92%"></div>
+</div>
+<div class="flex justify-between mt-2 text-[10px] text-on-surface-variant">
+<span>₩184,000 / ₩200,000</span>
+<span class="font-medium text-primary">₩16,000 남음</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 w-full max-w-md mx-auto bg-[#f8f9fa]/80 dark:bg-[#191c1d]/80 backdrop-blur-xl rounded-t-[1.5rem] border-t border-[#c0c8cd]/20 shadow-[0_-4px_24px_rgba(0,71,94,0.06)]">
+<div class="flex justify-around items-center px-4 pb-6 pt-3">
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">대시보드</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">edit_square</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">입력</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">내역</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#00475e] text-white dark:bg-[#c0e8ff] dark:text-[#003547] rounded-xl px-3 py-1.5 active:scale-90 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">분석</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#40484d] dark:text-[#c0c8cd] px-3 py-1.5 hover:text-[#00475e] active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">설정</span>
+</a>
+</div>
+</nav>
+</body></html>

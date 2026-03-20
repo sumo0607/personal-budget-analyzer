@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "pwsh -NoProfile -File .github/hooks/scripts/session-summary.ps1",
+        "timeout": 10
+      }
+    ]
+  }
+}
