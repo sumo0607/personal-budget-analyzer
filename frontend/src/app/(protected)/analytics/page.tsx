@@ -242,18 +242,19 @@ export default function AnalyticsPage() {
               const pct = Math.min(b.usage_percent, 100);
               const isOver = b.usage_percent > 100;
               const isNear = b.usage_percent > 85 && !isOver;
-              const color = isOver ? "error" : isNear ? "primary" : "secondary";
+              const textColor = isOver ? "text-error" : isNear ? "text-primary" : "text-secondary";
+              const bgColor = isOver ? "bg-error" : isNear ? "bg-primary" : "bg-secondary";
               return (
                 <div key={b.category} className="bg-surface-container-lowest p-4 rounded-xl shadow-sm">
                   <div className="flex justify-between mb-2">
                     <span className="font-bold text-sm">{b.category}</span>
-                    <span className={`text-xs text-${color} font-bold`}>
+                    <span className={`text-xs font-bold ${textColor}`}>
                       {Math.round(b.usage_percent)}% 사용
                     </span>
                   </div>
                   <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
                     <div
-                      className={`bg-${color} h-full rounded-full transition-all duration-500`}
+                      className={`${bgColor} h-full rounded-full transition-all duration-500`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -261,7 +262,7 @@ export default function AnalyticsPage() {
                     <span>
                       {formatCurrency(b.spent)} / {formatCurrency(b.budget_amount)}
                     </span>
-                    <span className={`font-medium text-${color}`}>
+                    <span className={`font-medium ${textColor}`}>
                       {isOver
                         ? `${formatCurrency(b.spent - b.budget_amount)} 초과`
                         : `${formatCurrency(b.remaining)} 남음`}

@@ -6,12 +6,13 @@ import { useTransactions } from "@/hooks/useTransactions";
 import { useFilterStore } from "@/stores/filter";
 import { formatCurrency, formatCurrencyShort, formatDateKorean } from "@/lib/utils";
 import { CATEGORY_ICONS } from "@/types";
+import type { BudgetStatus, ChartDataPoint } from "@/types";
 import {
   BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid,
 } from "recharts";
 
 export default function DashboardPage() {
-  const selectedMonth = useFilterStore((s) => s.selectedMonth);
+  const selectedMonth = useFilterStore((s: { selectedMonth: string }) => s.selectedMonth);
 
   // 이번 달 시작일/마지막일
   const startDate = `${selectedMonth}-01`;
@@ -31,19 +32,19 @@ export default function DashboardPage() {
   const dailyAvg = summary?.daily_avg_expense ?? 0;
 
   // 예산 사용률 계산
-  const totalBudget = budgetStatus?.reduce((s, b) => s + b.budget_amount, 0) ?? 0;
-  const totalSpent = budgetStatus?.reduce((s, b) => s + b.spent, 0) ?? 0;
+  const totalBudget = budgetStatus?.reduce((s: number, b: BudgetStatus) => s + b.budget_amount, 0) ?? 0;
+  const totalSpent = budgetStatus?.reduce((s: number, b: BudgetStatus) => s + b.spent, 0) ?? 0;
   const budgetPercent = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
   // 카테고리 비중 (상위 5개)
   const topCategories = categoryData?.slice(0, 5) ?? [];
-  const totalCatExpense = topCategories.reduce((s, c) => s + c.amount, 0);
+  const totalCatExpense = topCategories.reduce((s: number, c: ChartDataPoint) => s + c.amount, 0);
 
   // 차트 데이터 (월별 지출 추이 — 최근 6개월)
   const chartData = (monthlyData ?? [])
-    .filter((d) => d.expense !== undefined)
+    .filter((d: ChartDataPoint) => d.expense !== undefined)
     .slice(-6)
-    .map((d) => ({
+    .map((d: ChartDataPoint) => ({
       month: d.year_month?.slice(5) + "월",
       amount: d.expense ?? d.amount,
     }));
